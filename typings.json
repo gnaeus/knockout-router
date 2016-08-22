@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "knockout": "registry:npm/knockout#3.4.0+20160516171930"
+  },
+  "globalDependencies": {
+    "qs": "registry:dt/qs#6.2.0+20160707010053"
+  }
+}

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Knockout Router</title>
+    <style type="text/css">
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font: 16px sans-serif;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        #header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            padding: 0 20px;
+            line-height: 60px;
+            font-size: 20px;
+            color: #fff;
+            background: #00796B;
+            box-sizing: border-box;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.26);
+        }
+
+        #container {
+            display: flex;
+            flex: auto;
+            margin-top: 60px;
+        }
+        
+        #content {
+            flex: auto;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        #sidebar {
+            flex: none;
+            width: 300px; 
+            padding: 20px;
+            background: #B2DFDB;
+            box-sizing: border-box;
+        }
+
+        #header a,
+        #header a:visited {
+            text-decoration: none;
+            color: #fff;
+        }
+
+        #container a,
+        #container a:visited {
+            color: #006;
+        }
+
+        p::after {
+            content: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+        }
+    </style>
+    <script src="node_modules/knockout/build/output/knockout-latest.js"></script>
+    <script src="dist/knockout-router.js"></script>
+</head>
+<body>
+    <header id="header">
+        <a href="/">Home</a>
+        <a href="/tasks">Tasks</a>
+    </header>
+    <div id="container">
+        <knockout-router id="content" params="baseUrl: '/tasks'">
+            <home-page  route="/"></home-page>
+            <tasks-page route="/tasks"></tasks-page>
+            <task-page  route="/tasks/:taskID/:tab?"></task-page>
+        </knockout-router>
+        <aside id="sidebar">
+            <div><a href="/tasks/1">task 1</a></div>
+            <div><a href="/tasks/2">task 2</a></div>
+            <div><a href="/tasks/2?name=Test">task 2 + Name</a></div>
+            <div><a href="/tasks/3">task 3</a></div>
+        </aside>
+    </div>
+    <script type="text/javascript">
+        [
+            ["home-page", `<h1>Home</h1>`],
+            ["tasks-page", `
+                <h1>Tasks</h1>
+                <div><a href="/tasks/1">task 1</a></div>
+                <div><a href="/tasks/2">task 2</a></div>
+                <div><a href="/tasks/2?name=Test">task 2 + Name</a></div>
+                <div><a href="/tasks/3">task 3</a></div>`
+            ],
+            ["task-page", `
+                <h1>Task <span data-bind="text: params.taskID()"></span></h1>
+                <h3 data-bind="if: params.name">
+                    Name: <span data-bind="text: params.name"></span>
+                </h3>
+                <div>
+                    <a data-bind="attr: { href: '/tasks/' + params.taskID() }">details</a>
+                    <a data-bind="attr: { href: '/tasks/' + params.taskID() + '/comments' }">comments</a>
+                </div>
+                <knockout-router routePrefix="/tasks/:taskID" rootUrl="/tasks">
+                    <details-view route="/" action="setState"></details-view>
+                    <comments-view route="/comments" action="setState"></comments-view>
+                </knockout-router>`
+            ],
+            ["details-view", `
+                <h2>Details <span data-bind="text: params.taskID()"></span></h2>
+                <a data-bind="path: '/' + params.taskID() + '/comments'">Go to comments</a>
+                <div data-bind="foreach: Array.apply(null, { length: state().count })">
+                    <p></p>
+                </div>`,
+                function (context) {
+                    context.state = {
+                        count: context.params.taskID,
+                    };
+                    return new Promise(function (resolve) { setTimeout(resolve, 1000); });
+                }
+            ],
+            ["comments-view", `
+                <h2>Comments <span data-bind="text: params.taskID()"></span></h2>
+                <a data-bind="path: '/' + params.taskID()">Go to details</a>
+                <div data-bind="foreach: Array.apply(null, { length: state().count })">
+                    <p></p>
+                </div>`,
+                function (context) {
+                    context.state = {
+                        count: context.params.taskID,
+                    };
+                    return new Promise(function (resolve) { setTimeout(resolve, 1000); });
+                }
+            ],
+        ].forEach(c => ko.components.register(c[0], {
+            template: c[1],
+            setState: c[2],
+        }));
+        ko.applyBindings();
+    </script>
+</body>
+</html>
