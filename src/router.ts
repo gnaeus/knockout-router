@@ -3,7 +3,10 @@
  * Available under MIT license
  */
 import * as ko from "knockout";
-import { find, getPath, eventWhich, sameOrigin } from "./utils.ts";
+import {
+    RouterTag, getParentRouter,
+    arrayFirst, getPath, eventWhich, sameOrigin
+} from "./utils.ts";
 import { RouteContext, ComponentContext } from "./context.ts";
 import { Route, Action } from "./route.ts";
 import { setBindingsCurrentPath } from "./bindings.ts";
@@ -23,7 +26,7 @@ export interface RouterOptions {
     }
 }
 
-class Router {
+class Router extends RouterTag {
     actions: Object;
     rootUrl: string;
     routePrefix: string;
@@ -40,17 +43,21 @@ class Router {
     constructor(element: Element, routeNodes: Element[], { 
         rootUrl, routePrefix, actions, onNavStart, onNavFinish
     }: RouterOptions) {
+        super();
+
         ROUTERS.push(this);
         if (ROUTERS.length === 1) {
             addEventListener(CLICK_EVENT, onLinkClick, false);
             addEventListener("popstate", onPopState, false);
         }
+
         rootUrl = rootUrl || element.getAttribute("rootUrl");
         routePrefix = routePrefix || element.getAttribute("routePrefix");
 
-        let parent = getParentRouter(element);
+        let bindingContext = ko.contextFor(element);
+        let parentRouter = getParentRouter(bindingContext) as Router;
 
-        if (!parent) {
+        if (!parentRouter) {
             this.rootUrl = rootUrl || "";
             this.routePrefix = rootUrl + routePrefix || "";
             this.actions = actions || {};
@@ -59,9 +66,9 @@ class Router {
                 throw new Error("Only top-level router can specify 'rootUrl'");
             }
             // concatenated with parent
-            this.routePrefix = parent.routePrefix + (routePrefix || "");
+            this.routePrefix = parentRouter.routePrefix + (routePrefix || "");
             // inherited from parent
-            this.actions = actions || parent.actions;
+            this.actions = actions || parentRouter.actions;
         }
         this.onNavStart = onNavStart || noop;
         this.onNavFinish = onNavFinish || noop;
@@ -84,7 +91,7 @@ class Router {
     dispatch(url: string) {
         this.onNavStart();
 
-        this.route = find(this.routes, route => route.dispatch(url));
+        this.route = arrayFirst(this.routes, route => route.dispatch(url));
         if (!this.route) {
             return;
         }
@@ -132,17 +139,12 @@ class Router {
     }
 }
 
-function getParentRouter(element: Element): Router {
-    let $parents = ko.contextFor(element).$parents;
-    return find($parents, vm => vm instanceof Router);
-}
-
 export function navigate(url: string, replace = false): boolean {
     let promises = ROUTERS
         .map(router => router.dispatch(url))
         .filter(promise => !!promise);
 
-    let status = !!find(ROUTERS, router => !!router.route);
+    let status = !!arrayFirst(ROUTERS, router => !!router.route);
     
     // TODO: store and load history state
     if (status && typeof history !== "undefined") {
@@ -220,11 +222,11 @@ ko.components.register("knockout-router", {
         },
     },
     template: `
-        <!-- ko if: binding() -->
-            <!-- ko component: {
+        <div data-bind="if: binding()">
+            <div data-bind="component: {
                 name: binding().component,
                 params: binding().params
-            } --><!-- /ko -->
-        <!-- /ko -->
+            }"></div>
+        </div>
     `.replace(/\s+/g, " "),
 });

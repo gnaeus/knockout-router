@@ -6,6 +6,7 @@ import * as ko from "knockout";
 import * as pathToRegexp from "path-to-regexp";
 import * as qs from "qs";
 import { RouteContext } from "./context.ts";
+import { extend } from "./utils.ts";
 
 // work-around typescript commonjs module export
 const _pathToRegexp = (pathToRegexp as any).default;
@@ -55,12 +56,7 @@ export class Route {
             params[this.keys[i - 1]] = matches[i];
         }
 
-        let query = qs.parse(queryString) as Object;
-        for (let key in query) {
-            if (query.hasOwnProperty(key)) {
-                params[key] = query[key];
-            }
-        }
+        extend(params, qs.parse(queryString));
 
         this.context = {
             params: params,

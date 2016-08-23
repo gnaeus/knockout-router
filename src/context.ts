@@ -3,6 +3,7 @@
  * Available under MIT license
  */
 import * as ko from "knockout";
+import { objectForEach } from "./utils.ts";
 
 export interface RouteContext {
     params: Object & {
@@ -27,22 +28,19 @@ export class ComponentContext implements RouteContext {
 
     update(context: RouteContext) {
         let { params, state, route, url } = context;
-        for (let key in params) {
-            if (params.hasOwnProperty(key)) {
-                let value = params[key];
-                let observable = this.params[key];
-                if (observable) {
-                    observable(value);
-                } else {
-                    this.params[key] = ko.observable(value);
-                }
+        objectForEach(params, (key, value) => {
+            let observable = this.params[key];
+            if (observable) {
+                observable(value);
+            } else {
+                this.params[key] = ko.observable(value);
             }
-        }
-        for (let key in this.params) {
-            if (this.params.hasOwnProperty(key) && !params.hasOwnProperty(key)) {
-                this.params[key](null);
+        });
+        objectForEach(this.params, (key, observable) => {
+            if (!params.hasOwnProperty(key)) {
+                observable(null);
             }
-        }
+        })
         this.state(state);
         this.route(route);
         this.url(url);

@@ -4,7 +4,7 @@
  */
 import * as ko from "knockout";
 import * as qs from "qs";
-import { find, eventWhich, getPath } from  "./utils.ts";
+import { RouterTag, getParentRouter, eventWhich, getPath } from  "./utils.ts";
 import { navigate } from "./router.ts";
 
 ko.bindingHandlers['path'] =
@@ -32,9 +32,8 @@ function applyBinding(
     allBindings: ko.AllBindingsAccessor,
     ctx: ko.BindingContext<any>
 ) {
-    let $parents = ko.contextFor(el).$parents;
-    let router = find($parents, ctx => ctx && ctx.rootUrl);
-    let rootUrl = router && router.rootUrl;
+    let router = getParentRouter(ko.contextFor(el));
+    let rootUrl = router && router.rootUrl || "";
 
     let url = ko.pureComputed(() => resolveUrl(
         rootUrl, allBindings.get("path"), allBindings.get("query")
