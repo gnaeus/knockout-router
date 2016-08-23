@@ -4,17 +4,22 @@
  */
 import * as ko from "knockout";
 
-interface ArrayLike<T> {
-    length: number,
-    [index: number]: T,
-}
-
-type ArraySlice = <T>(arrayLike: ArrayLike<T>, start?: number, end?: number) => T[];
-
-export const arraySlice: ArraySlice = Function.prototype.call.bind(Array.prototype.slice);
 export const arrayFirst = ko.utils.arrayFirst;
 export const objectForEach = ko.utils.objectForEach;
 export const extend = ko.utils.extend;
+
+export function inherit<T, U>(target: T, source: U): T & U {
+    if (source) {
+        for (let prop in source) {
+            if (source.hasOwnProperty(prop)
+                && !target.hasOwnProperty(prop)
+            ) {
+                target[prop] = source[prop];
+            }
+        }
+    }
+    return target as any;
+}
 
 export class RouterTag { }
 
@@ -39,25 +44,19 @@ export function sameOrigin(href): boolean {
     return href && (0 === href.indexOf(origin));
 }
 
-// custom binding semantics
 const bindingProvider = new ko.bindingProvider();
 const bindingOptions = { bindingParams: true };
 
-export function getAttributeBindings(
-    element: Element, context: ko.BindingContext<any>
-): Object {
-    let attributes = {}, bindingStrings = [];
-    arraySlice(element.attributes).forEach(({ name, value }) => {
-        let end = value && value.length - 1;
-        if (value && value[0] === "{" && value[end] === "}") {
-            bindingStrings.push(name + ":" + value.substr(1, end));
-        } else {
-            attributes[name] = value;
-        }
-    });
+export type ParamsBindings = Object & { [name: string]: any };
 
-    let bindings = bindingProvider.parseBindingsString(
-        bindingStrings.join(","), context, element, bindingOptions
+export function getParamsBindings(
+    element: Element, context: ko.BindingContext<any>
+): ParamsBindings {
+    let paramsString = element.getAttribute("params");
+    if (!paramsString) {
+        return {};
+    }
+    return bindingProvider.parseBindingsString(
+        paramsString, context, element, bindingOptions
     );
-    return extend(bindings, attributes);
 }

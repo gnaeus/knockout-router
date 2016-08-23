@@ -84,7 +84,7 @@
             onNavFinish: function(){ console.log('navFinish'); }
         ">
             <home-page  route="/"></home-page>
-            <tasks-page route="/tasks"></tasks-page>
+            <tasks-page params="route: '/tasks', store: store"></tasks-page>
             <task-page  route="/tasks/:taskID/:tab?"></task-page>
         </knockout-router>
         <aside id="sidebar">
@@ -102,13 +102,16 @@
                 <div><a href="/tasks/1">task 1</a></div>
                 <div><a href="/tasks/2">task 2</a></div>
                 <div><a href="/tasks/2?name=Test">task 2 + Name</a></div>
-                <div><a href="/tasks/3">task 3</a></div>`
+                <div><a href="/tasks/3">task 3</a></div>
+                <h4>
+                    Store: <span data-bind="text: JSON.stringify(store)"></span>
+                </h4>`
             ],
             ["task-page", `
                 <h1>Task <span data-bind="text: params.taskID()"></span></h1>
                 <h3 data-bind="if: params.name">
                     Name: <span data-bind="text: params.name"></span>
-                </h3>
+                </h3> 
                 <div>
                     <a data-bind="path: '/tasks/' + params.taskID(),
                                   activePathCss: 'active-path'">details</a>
@@ -152,7 +155,7 @@
             template: c[1],
             setState: c[2],
         }));
-        ko.applyBindings({ actions: { foo: "bar" }});
+        ko.applyBindings({ store: { foo: "bar" } });
     </script>
 </body>
 </html>

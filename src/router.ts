@@ -4,10 +4,10 @@
  */
 import * as ko from "knockout";
 import {
-    RouterTag, getParentRouter,
-    arrayFirst, getPath, eventWhich, sameOrigin
+    RouterTag, getParentRouter, arrayFirst,
+    inherit, getPath, eventWhich, sameOrigin
 } from "./utils.ts";
-import { RouteContext, ComponentContext } from "./context.ts";
+import { RouteContext, ComponentParams } from "./context.ts";
 import { Route, Action } from "./route.ts";
 import { setBindingsCurrentPath } from "./bindings.ts";
 
@@ -27,21 +27,21 @@ export interface RouterOptions {
 }
 
 class Router extends RouterTag {
-    actions: Object;
     rootUrl: string;
     routePrefix: string;
     onNavStart: () => void;
     onNavFinish: () => void;
+    actions: Object;
     route: Route = null;
     
     private routes: Route[] = [];
     private binding = ko.observable<{
         component: string,
-        params: ComponentContext,
+        params: ComponentParams,
     }>();
     
     constructor(element: Element, routeNodes: Element[], { 
-        rootUrl, routePrefix, actions, onNavStart, onNavFinish
+        rootUrl, routePrefix, onNavStart, onNavFinish, actions
     }: RouterOptions) {
         super();
 
@@ -68,13 +68,13 @@ class Router extends RouterTag {
             // concatenated with parent
             this.routePrefix = parentRouter.routePrefix + (routePrefix || "");
             // inherited from parent
-            this.actions = actions || parentRouter.actions;
+            this.actions = inherit(actions || {}, parentRouter.actions);
         }
         this.onNavStart = onNavStart || noop;
         this.onNavFinish = onNavFinish || noop;
 
         this.routes = routeNodes.map(node => new Route(
-            node, this.routePrefix, this.actions
+            node, bindingContext, this.routePrefix, this.actions
         ));
 
         this.dispatchAndNavigate(getPath(location));
@@ -113,7 +113,7 @@ class Router extends RouterTag {
             return;
         }
         
-        let { component, context } = this.route;
+        let { component, context, restParams } = this.route;
         let binding = this.binding();
 
         if (binding && binding.component === component) {
@@ -121,7 +121,7 @@ class Router extends RouterTag {
         } else {
             this.binding({
                 component: component,
-                params: new ComponentContext(context),
+                params: new ComponentParams(context, restParams),
             });
         }
 

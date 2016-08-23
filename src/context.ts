@@ -3,7 +3,7 @@
  * Available under MIT license
  */
 import * as ko from "knockout";
-import { objectForEach } from "./utils.ts";
+import { ParamsBindings, inherit, objectForEach } from "./utils.ts";
 
 export interface RouteContext {
     params: Object & {
@@ -14,7 +14,7 @@ export interface RouteContext {
     url: any,
 }
 
-export class ComponentContext implements RouteContext {
+export class ComponentParams implements RouteContext {
     params: Object & {
         [key: string]: ko.Observable<any>
     } = {};
@@ -22,8 +22,9 @@ export class ComponentContext implements RouteContext {
     route = ko.observable<string>();
     url = ko.observable<string>();
 
-    constructor(context: RouteContext) {
+    constructor(context: RouteContext, restParams: ParamsBindings) {
         this.update(context);
+        inherit(this, restParams);
     }
 
     update(context: RouteContext) {

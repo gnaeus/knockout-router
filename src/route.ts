@@ -6,7 +6,7 @@ import * as ko from "knockout";
 import * as pathToRegexp from "path-to-regexp";
 import * as qs from "qs";
 import { RouteContext } from "./context.ts";
-import { extend } from "./utils.ts";
+import { ParamsBindings, getParamsBindings, extend } from "./utils.ts";
 
 // work-around typescript commonjs module export
 const _pathToRegexp = (pathToRegexp as any).default;
@@ -14,27 +14,43 @@ const _pathToRegexp = (pathToRegexp as any).default;
 export type Action = (context: RouteContext) => Promise<void> | void;
 
 export class Route {
-    route: string;
     component: string;
+    route: string;
     action: Action;
     context: RouteContext;
+    restParams: ParamsBindings;
 
     private re: pathToRegexp.PathRegExp;
     private keys: (string | number)[];
 
-    constructor(node: Element, routePrefix = "", actions = {}) {
-        this.route = routePrefix + node.getAttribute("route");
+    constructor(
+        node: Element,
+        bindingContext: ko.BindingContext<any>,
+        routePrefix: string,
+        actions: Object
+    ) {
         this.component = ko.components.getComponentNameForNode(node);
-        this.action = noop;
+        this.restParams = getParamsBindings(node, bindingContext);
+
+        let { route, action } = this.restParams;
+        delete this.restParams['route'];
+        delete this.restParams['action'];
+
+        route = route || node.getAttribute("route");
+        action = action || node.getAttribute("action");
         
-        let actionKey = node.getAttribute("action");
-        if (actionKey) {
-            if (actions.hasOwnProperty(actionKey)) {
-                this.action = actions[actionKey];
+        this.route = routePrefix + route;
+        this.action = noop;
+
+        if (typeof action === "function") {
+            this.action = action;
+        } else if (typeof action === "string") {
+            if (actions.hasOwnProperty(action)) {
+                this.action = actions[action];
             } else {
-                ko.components.defaultLoader.getConfig(this.component, (config) => {
-                    if (config.hasOwnProperty(actionKey)) {
-                        this.action = config[actionKey];
+                ko.components.defaultLoader.getConfig(this.component, config => {
+                    if (config.hasOwnProperty(action)) {
+                        this.action = config[action];
                     }
                 });
             }

@@ -10,10 +10,20 @@ function __extends(d, b) {
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 }
 
-var arraySlice = Function.prototype.call.bind(Array.prototype.slice);
 var arrayFirst = ko.utils.arrayFirst;
 var objectForEach = ko.utils.objectForEach;
 var extend = ko.utils.extend;
+function inherit(target, source) {
+    if (source) {
+        for (var prop in source) {
+            if (source.hasOwnProperty(prop)
+                && !target.hasOwnProperty(prop)) {
+                target[prop] = source[prop];
+            }
+        }
+    }
+    return target;
+}
 var RouterTag = (function () {
     function RouterTag() {
     }
@@ -37,18 +47,26 @@ function sameOrigin(href) {
     }
     return href && (0 === href.indexOf(origin));
 }
-// custom binding semantics
 var bindingProvider = new ko.bindingProvider();
+var bindingOptions = { bindingParams: true };
+function getParamsBindings(element, context) {
+    var paramsString = element.getAttribute("params");
+    if (!paramsString) {
+        return {};
+    }
+    return bindingProvider.parseBindingsString(paramsString, context, element, bindingOptions);
+}
 
-var ComponentContext = (function () {
-    function ComponentContext(context) {
+var ComponentParams = (function () {
+    function ComponentParams(context, restParams) {
         this.params = {};
         this.state = ko.observable();
         this.route = ko.observable();
         this.url = ko.observable();
         this.update(context);
+        inherit(this, restParams);
     }
-    ComponentContext.prototype.update = function (context) {
+    ComponentParams.prototype.update = function (context) {
         var _this = this;
         var params = context.params, state = context.state, route = context.route, url = context.url;
         objectForEach(params, function (key, value) {
@@ -69,7 +87,7 @@ var ComponentContext = (function () {
         this.route(route);
         this.url(url);
     };
-    return ComponentContext;
+    return ComponentParams;
 }());
 
 function interopDefault(ex) {
@@ -1053,22 +1071,28 @@ var parse$1 = index$4.parse;
 // work-around typescript commonjs module export
 var _pathToRegexp = index$1;
 var Route = (function () {
-    function Route(node, routePrefix, actions) {
+    function Route(node, bindingContext, routePrefix, actions) {
         var _this = this;
-        if (routePrefix === void 0) { routePrefix = ""; }
-        if (actions === void 0) { actions = {}; }
-        this.route = routePrefix + node.getAttribute("route");
         this.component = ko.components.getComponentNameForNode(node);
+        this.restParams = getParamsBindings(node, bindingContext);
+        var _a = this.restParams, route = _a.route, action = _a.action;
+        delete this.restParams['route'];
+        delete this.restParams['action'];
+        route = route || node.getAttribute("route");
+        action = action || node.getAttribute("action");
+        this.route = routePrefix + route;
         this.action = noop$1;
-        var actionKey = node.getAttribute("action");
-        if (actionKey) {
-            if (actions.hasOwnProperty(actionKey)) {
-                this.action = actions[actionKey];
+        if (typeof action === "function") {
+            this.action = action;
+        }
+        else if (typeof action === "string") {
+            if (actions.hasOwnProperty(action)) {
+                this.action = actions[action];
             }
             else {
                 ko.components.defaultLoader.getConfig(this.component, function (config) {
-                    if (config.hasOwnProperty(actionKey)) {
-                        _this.action = config[actionKey];
+                    if (config.hasOwnProperty(action)) {
+                        _this.action = config[action];
                     }
                 });
             }
@@ -1162,7 +1186,7 @@ var Router = (function (_super) {
     __extends(Router, _super);
     function Router(element, routeNodes, _a) {
         var _this = this;
-        var rootUrl = _a.rootUrl, routePrefix = _a.routePrefix, actions = _a.actions, onNavStart = _a.onNavStart, onNavFinish = _a.onNavFinish;
+        var rootUrl = _a.rootUrl, routePrefix = _a.routePrefix, onNavStart = _a.onNavStart, onNavFinish = _a.onNavFinish, actions = _a.actions;
         _super.call(this);
         this.route = null;
         this.routes = [];
@@ -1188,11 +1212,11 @@ var Router = (function (_super) {
             // concatenated with parent
             this.routePrefix = parentRouter.routePrefix + (routePrefix || "");
             // inherited from parent
-            this.actions = actions || parentRouter.actions;
+            this.actions = inherit(actions || {}, parentRouter.actions);
         }
         this.onNavStart = onNavStart || noop;
         this.onNavFinish = onNavFinish || noop;
-        this.routes = routeNodes.map(function (node) { return new Route(node, _this.routePrefix, _this.actions); });
+        this.routes = routeNodes.map(function (node) { return new Route(node, bindingContext, _this.routePrefix, _this.actions); });
         this.dispatchAndNavigate(getPath(location));
     }
     Router.prototype.dispose = function () {
@@ -1221,7 +1245,7 @@ var Router = (function (_super) {
             this.onNavFinish();
             return;
         }
-        var _a = this.route, component = _a.component, context = _a.context;
+        var _a = this.route, component = _a.component, context = _a.context, restParams = _a.restParams;
         var binding = this.binding();
         if (binding && binding.component === component) {
             binding.params.update(context);
@@ -1229,7 +1253,7 @@ var Router = (function (_super) {
         else {
             this.binding({
                 component: component,
-                params: new ComponentContext(context),
+                params: new ComponentParams(context, restParams),
             });
         }
         this.route = null;
