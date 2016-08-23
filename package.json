@@ -8,9 +8,9 @@
     "dist"
   ],
   "scripts": {
-    "test": "explorer test.html",
     "build": "rollup -c && rollup -c rollup.config.min.js",
-    "build-dev": "rollup -c -w"
+    "build-dev": "rollup -c -w",
+    "prepublish": "typings install"
   },
   "repository": {
     "type": "git",

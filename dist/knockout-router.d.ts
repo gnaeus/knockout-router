@@ -12,6 +12,8 @@ export interface RouteContext {
 export interface RouterOptions {
     rootUrl?: string,
     routePrefix?: string,
+    onNavStart: () => void,
+    onNavEnd: () => void,
     actions?: Object & {
         [key: string]: Action,
     }

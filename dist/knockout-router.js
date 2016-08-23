@@ -1042,6 +1042,7 @@ module.exports = {
 });
 
 interopDefault(index$4);
+var stringify = index$4.stringify;
 var parse$1 = index$4.parse;
 
 // work-around typescript commonjs module export
@@ -1053,7 +1054,7 @@ var Route = (function () {
         if (actions === void 0) { actions = {}; }
         this.route = routePrefix + node.getAttribute("route");
         this.component = ko.components.getComponentNameForNode(node);
-        this.action = noop;
+        this.action = noop$1;
         var actionKey = node.getAttribute("action");
         if (actionKey) {
             if (actions.hasOwnProperty(actionKey)) {
@@ -1096,26 +1097,64 @@ var Route = (function () {
     };
     return Route;
 }());
-function noop() { }
+function noop$1() { }
 
-var ROOT_URL = typeof Symbol !== "undefined"
-    ? Symbol("rootUrl") : "__knockout_router_root_url_";
-// TODO: 'path' (from rootUrl) & 'query' (by "qs") bindings
-// TODO: handle existing 'href' attr at 'path' init
-// TODO: handle '~/' as rootUrl
-ko.bindingHandlers.path = {
-    init: function (element) {
-        var $parents = ko.contextFor(element).$parents;
-        var router = find($parents, function (ctx) { return ctx && ctx.rootUrl; });
-        if (router && router.rootUrl) {
-            element[ROOT_URL] = router.rootUrl;
-        }
-    },
-    update: function (element, valueAccessor) {
-        var rootUrl = element[ROOT_URL] || "";
-        element.setAttribute("href", rootUrl + ko.unwrap(valueAccessor()));
+ko.bindingHandlers['path'] =
+    ko.bindingHandlers['query'] =
+        ko.bindingHandlers['activePathCss'] = {
+            init: function (el, va, ab, vm, ctx) {
+                applyBinding.call(this, el, ab, ctx);
+            }
+        };
+var bindingsCurrentPath = ko.observable(location.pathname);
+function setBindingsCurrentPath(url) {
+    url = url.split("#")[0].split("?")[0];
+    bindingsCurrentPath(url);
+}
+function resolveUrl(rootUrl, path, query) {
+    if (rootUrl === void 0) { rootUrl = ""; }
+    if (path === void 0) { path = ""; }
+    if (query === void 0) { query = null; }
+    return (path.startsWith("~/") ? rootUrl + path.substr(1) : path)
+        + (query ? "?" + stringify(ko.toJS(query)) : "");
+}
+function applyBinding(el, allBindings, ctx) {
+    var $parents = ko.contextFor(el).$parents;
+    var router = find($parents, function (ctx) { return ctx && ctx.rootUrl; });
+    var rootUrl = router && router.rootUrl;
+    var url = ko.pureComputed(function () { return resolveUrl(rootUrl, allBindings.get("path"), allBindings.get("query")); });
+    var bindingsToApply = {};
+    if (el.tagName.toLocaleUpperCase() === "A") {
+        bindingsToApply['attr'] = { href: url };
     }
-};
+    else {
+        bindingsToApply['click'] = function (data, e) {
+            var debounce = 1 !== eventWhich(e);
+            var hasOtherTarget = el.hasAttribute("target");
+            var hasExternalRel = el.getAttribute("rel") === "external";
+            var modifierKey = e.metaKey || e.ctrlKey || e.shiftKey;
+            if (debounce || hasOtherTarget || hasExternalRel || modifierKey) {
+                return true;
+            }
+            var handled = navigate(url());
+            if (handled) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+            }
+            return !handled;
+        };
+    }
+    var activePathCss = allBindings.get("activePathCss");
+    if (activePathCss) {
+        bindingsToApply['css'] = (_a = {},
+            _a[activePathCss] = ko.pureComputed(function () { return url() === bindingsCurrentPath(); }),
+            _a
+        );
+    }
+    // allow adjacent routers to initialize
+    ko.tasks.schedule(function () { return ko.applyBindingsToNode(el, bindingsToApply, ctx); });
+    var _a;
+}
 
 var CLICK_EVENT = typeof document !== "undefined" && document.ontouchstart
     ? "touchstart" : "click";
@@ -1123,7 +1162,7 @@ var ROUTERS = [];
 var Router = (function () {
     function Router(element, routeNodes, _a) {
         var _this = this;
-        var rootUrl = _a.rootUrl, routePrefix = _a.routePrefix, actions = _a.actions;
+        var rootUrl = _a.rootUrl, routePrefix = _a.routePrefix, actions = _a.actions, onNavStart = _a.onNavStart, onNavFinish = _a.onNavFinish;
         this.route = null;
         this.routes = [];
         this.binding = ko.observable();
@@ -1135,11 +1174,22 @@ var Router = (function () {
         rootUrl = rootUrl || element.getAttribute("rootUrl");
         routePrefix = routePrefix || element.getAttribute("routePrefix");
         var parent = getParentRouter(element);
-        // inherited from parent
-        this.actions = actions || parent && parent.actions || {};
-        this.rootUrl = rootUrl || parent && parent.rootUrl || "";
-        // concatenated with parent
-        this.routePrefix = (parent && parent.routePrefix || "") + (routePrefix || "");
+        if (!parent) {
+            this.rootUrl = rootUrl || "";
+            this.routePrefix = rootUrl + routePrefix || "";
+            this.actions = actions || {};
+        }
+        else {
+            if (typeof rootUrl === "string") {
+                throw new Error("Only top-level router can specify 'rootUrl'");
+            }
+            // concatenated with parent
+            this.routePrefix = parent.routePrefix + (routePrefix || "");
+            // inherited from parent
+            this.actions = actions || parent.actions;
+        }
+        this.onNavStart = onNavStart || noop;
+        this.onNavFinish = onNavFinish || noop;
         this.routes = routeNodes.map(function (node) { return new Route(node, _this.routePrefix, _this.actions); });
         this.dispatchAndNavigate(getPath(location));
     }
@@ -1151,6 +1201,7 @@ var Router = (function () {
         }
     };
     Router.prototype.dispatch = function (url) {
+        this.onNavStart();
         this.route = find(this.routes, function (route) { return route.dispatch(url); });
         if (!this.route) {
             return;
@@ -1165,6 +1216,7 @@ var Router = (function () {
     Router.prototype.navigate = function () {
         if (!this.route) {
             this.binding(null);
+            this.onNavFinish();
             return;
         }
         var _a = this.route, component = _a.component, context = _a.context;
@@ -1179,6 +1231,7 @@ var Router = (function () {
             });
         }
         this.route = null;
+        this.onNavFinish();
     };
     Router.prototype.dispatchAndNavigate = function (url) {
         var _this = this;
@@ -1202,15 +1255,7 @@ function navigate(url, replace) {
         .map(function (router) { return router.dispatch(url); })
         .filter(function (promise) { return !!promise; });
     var status = !!find(ROUTERS, function (router) { return !!router.route; });
-    if (promises.length == 0) {
-        ROUTERS.forEach(function (router) { router.navigate(); });
-    }
-    else {
-        Promise.all(promises).then(function () {
-            ROUTERS.forEach(function (router) { router.navigate(); });
-        });
-    }
-    // TODO: store and load hsitory state
+    // TODO: store and load history state
     if (status && typeof history !== "undefined") {
         if (replace) {
             history.replaceState(null, null, url);
@@ -1218,6 +1263,18 @@ function navigate(url, replace) {
         else {
             history.pushState(null, null, url);
         }
+    }
+    var applyNavigation = function () {
+        ROUTERS.forEach(function (router) { router.navigate(); });
+        if (status) {
+            setBindingsCurrentPath(url);
+        }
+    };
+    if (promises.length == 0) {
+        applyNavigation();
+    }
+    else {
+        Promise.all(promises).then(applyNavigation);
     }
     return status;
 }
@@ -1229,7 +1286,6 @@ function onPopState(event) {
         event.preventDefault();
     }
 }
-// TODO: maybe prevent clicks when actions are executed ?
 function onLinkClick(event) {
     var target = event.target;
     while (target && "A" !== target.nodeName) {
@@ -1254,6 +1310,7 @@ function onLinkClick(event) {
         event.preventDefault();
     }
 }
+function noop() { }
 ko.components.register("knockout-router", {
     synchronous: true,
     viewModel: {

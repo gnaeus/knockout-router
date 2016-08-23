@@ -6,7 +6,7 @@ import * as ko from "knockout";
 import { find, getPath, eventWhich, sameOrigin } from "./utils.ts";
 import { RouteContext, ComponentContext } from "./context.ts";
 import { Route, Action } from "./route.ts";
-import "./bindings.ts";
+import { setBindingsCurrentPath } from "./bindings.ts";
 
 const CLICK_EVENT = typeof document !== "undefined" && document.ontouchstart
     ? "touchstart" : "click";
@@ -16,6 +16,8 @@ const ROUTERS: Router[] = [];
 export interface RouterOptions {
     rootUrl?: string,
     routePrefix?: string,
+    onNavStart: () => void,
+    onNavFinish: () => void,
     actions?: Object & {
         [key: string]: Action,
     }
@@ -25,6 +27,8 @@ class Router {
     actions: Object;
     rootUrl: string;
     routePrefix: string;
+    onNavStart: () => void;
+    onNavFinish: () => void;
     route: Route = null;
     
     private routes: Route[] = [];
@@ -34,7 +38,7 @@ class Router {
     }>();
     
     constructor(element: Element, routeNodes: Element[], { 
-        rootUrl, routePrefix, actions
+        rootUrl, routePrefix, actions, onNavStart, onNavFinish
     }: RouterOptions) {
         ROUTERS.push(this);
         if (ROUTERS.length === 1) {
@@ -46,12 +50,21 @@ class Router {
 
         let parent = getParentRouter(element);
 
-        // inherited from parent
-        this.actions = actions || parent && parent.actions || {};
-        this.rootUrl = rootUrl || parent && parent.rootUrl || "";
-
-        // concatenated with parent
-        this.routePrefix = (parent && parent.routePrefix || "") + (routePrefix || "");
+        if (!parent) {
+            this.rootUrl = rootUrl || "";
+            this.routePrefix = rootUrl + routePrefix || "";
+            this.actions = actions || {};
+        } else {
+            if (typeof rootUrl === "string") {
+                throw new Error("Only top-level router can specify 'rootUrl'");
+            }
+            // concatenated with parent
+            this.routePrefix = parent.routePrefix + (routePrefix || "");
+            // inherited from parent
+            this.actions = actions || parent.actions;
+        }
+        this.onNavStart = onNavStart || noop;
+        this.onNavFinish = onNavFinish || noop;
 
         this.routes = routeNodes.map(node => new Route(
             node, this.routePrefix, this.actions
@@ -69,6 +82,8 @@ class Router {
     }
 
     dispatch(url: string) {
+        this.onNavStart();
+
         this.route = find(this.routes, route => route.dispatch(url));
         if (!this.route) {
             return;
@@ -87,6 +102,7 @@ class Router {
     navigate() {
         if (!this.route) {
             this.binding(null);
+            this.onNavFinish();
             return;
         }
         
@@ -103,6 +119,7 @@ class Router {
         }
 
         this.route = null;
+        this.onNavFinish();
     }
 
     dispatchAndNavigate(url: string) {
@@ -126,21 +143,27 @@ export function navigate(url: string, replace = false): boolean {
         .filter(promise => !!promise);
 
     let status = !!find(ROUTERS, router => !!router.route);
-
-    if (promises.length == 0) {
-        ROUTERS.forEach(router => { router.navigate(); });
-    } else {
-        Promise.all(promises).then(() => {
-            ROUTERS.forEach(router => { router.navigate(); });
-        });
-    }
-    // TODO: store and load hsitory state
+    
+    // TODO: store and load history state
     if (status && typeof history !== "undefined") {
         if (replace) {
             history.replaceState(null, null, url);
         } else {
             history.pushState(null, null, url);
         }
+    }
+
+    let applyNavigation = () => {
+        ROUTERS.forEach(router => { router.navigate(); });
+        if (status) {
+            setBindingsCurrentPath(url);
+        }
+    };
+
+    if (promises.length == 0) {
+        applyNavigation();
+    } else {
+        Promise.all(promises).then(applyNavigation);
     }
     return status;
 }
@@ -154,7 +177,6 @@ function onPopState(event: PopStateEvent) {
     }
 }
 
-// TODO: maybe prevent clicks when actions are executed ?
 function onLinkClick(event: MouseEvent) {
     let target = event.target as HTMLAnchorElement;
     while (target && "A" !== target.nodeName) {
@@ -183,6 +205,8 @@ function onLinkClick(event: MouseEvent) {
          event.preventDefault();
     }
 }
+
+function noop() {}
 
 ko.components.register("knockout-router", {
     synchronous: true,
