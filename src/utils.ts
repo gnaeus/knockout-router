@@ -11,9 +11,7 @@ export const extend = ko.utils.extend;
 export function inherit<T, U>(target: T, source: U): T & U {
     if (source) {
         for (let prop in source) {
-            if (source.hasOwnProperty(prop)
-                && !target.hasOwnProperty(prop)
-            ) {
+            if (source.hasOwnProperty(prop) && !target.hasOwnProperty(prop)) {
                 target[prop] = source[prop];
             }
         }

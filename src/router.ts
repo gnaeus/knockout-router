@@ -59,12 +59,14 @@ class Router extends RouterTag {
 
         if (!parentRouter) {
             this.rootUrl = rootUrl || "";
-            this.routePrefix = rootUrl + routePrefix || "";
+            this.routePrefix = this.rootUrl + (routePrefix || "");
             this.actions = actions || {};
         } else {
             if (typeof rootUrl === "string") {
                 throw new Error("Only top-level router can specify 'rootUrl'");
             }
+            // inherited from parent
+            this.rootUrl = parentRouter.rootUrl;
             // concatenated with parent
             this.routePrefix = parentRouter.routePrefix + (routePrefix || "");
             // inherited from parent
@@ -130,7 +132,7 @@ class Router extends RouterTag {
     }
 
     dispatchAndNavigate(url: string) {
-        let promise = this.dispatch(getPath(location));
+        let promise = this.dispatch(url);
         if (!promise) {
             this.navigate();
         } else {
@@ -171,6 +173,7 @@ export function navigate(url: string, replace = false): boolean {
 }
 
 function onPopState(event: PopStateEvent) {
+    console.log(event);
     if (event.defaultPrevented) {
         return;
     }
