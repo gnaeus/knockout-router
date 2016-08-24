@@ -1243,7 +1243,7 @@ var Router = (function (_super) {
         }
         var binding = this.binding();
         var _a = this.route, component = _a.component, context = _a.context, action = _a.action;
-        if (binding && binding.component === component) {
+        if (binding && binding.name === component) {
             context.state = binding.params.state();
         }
         return action(context);
@@ -1259,14 +1259,15 @@ var Router = (function (_super) {
         }
         var _a = this.route, component = _a.component, context = _a.context, restParams = _a.restParams;
         var binding = this.binding();
-        if (binding && binding.component === component) {
+        if (binding && binding.name === component) {
             binding.params.update(context);
         }
         else {
             this.binding({
-                component: component,
+                name: component,
                 params: new ComponentParams(context, restParams),
             });
+            ko.tasks.runEarly();
         }
         this.route = null;
         this.onNavFinish();
@@ -1367,7 +1368,7 @@ ko.components.register("knockout-router", {
             return new Router(element, templateNodes.filter(function (n) { return n.nodeType === 1; }), params);
         },
     },
-    template: "\n        <div data-bind=\"if: binding()\">\n            <div data-bind=\"component: {\n                name: binding().component,\n                params: binding().params\n            }\"></div>\n        </div>\n    ".replace(/\s+/g, " "),
+    template: "<div data-bind=\"if: binding\"><div data-bind=\"component: binding\"></div></div>",
 });
 
 exports.navigate = navigate;

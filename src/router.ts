@@ -39,7 +39,7 @@ class Router extends RouterTag {
     
     private routes: Route[] = [];
     private binding = ko.observable<{
-        component: string,
+        name: string,
         params: ComponentParams,
     }>();
     
@@ -107,7 +107,7 @@ class Router extends RouterTag {
         let binding = this.binding();
         let { component, context, action } = this.route;
 
-        if (binding && binding.component === component) {
+        if (binding && binding.name === component) {
             context.state = binding.params.state();
         }
 
@@ -127,13 +127,14 @@ class Router extends RouterTag {
         let { component, context, restParams } = this.route;
         let binding = this.binding();
 
-        if (binding && binding.component === component) {
+        if (binding && binding.name === component) {
             binding.params.update(context);
         } else {
             this.binding({
-                component: component,
+                name: component,
                 params: new ComponentParams(context, restParams),
             });
+            ko.tasks.runEarly();
         }
 
         this.route = null;
@@ -249,12 +250,5 @@ ko.components.register("knockout-router", {
             );
         },
     },
-    template: `
-        <div data-bind="if: binding()">
-            <div data-bind="component: {
-                name: binding().component,
-                params: binding().params
-            }"></div>
-        </div>
-    `.replace(/\s+/g, " "),
+    template: `<div data-bind="if: binding"><div data-bind="component: binding"></div></div>`,
 });
