@@ -3,29 +3,20 @@
  * Available under MIT license
  */
 import * as ko from "knockout";
-import * as qs from "qs";
-import { RouterTag, getParentRouter, eventWhich, getPath } from  "./utils.ts";
+import {
+    RouterTag, getParentRouter,
+    resolveUrl, eventWhich, getUrl
+} from  "./utils.ts";
 import { navigate } from "./router.ts";
 
-ko.bindingHandlers['path'] =
-ko.bindingHandlers['query'] =
-ko.bindingHandlers['activePathCss'] = { 
+// 'query:' and 'activePathCss:' bindings works only with 'path:' binding together
+ko.bindingHandlers['path'] = {
     init(el, va, ab, vm, ctx) { 
         applyBinding.call(this, el, ab, ctx);
     }
 };
 
-const bindingsCurrentPath = ko.observable(location.pathname);
-
-export function setBindingsCurrentPath(url: string) {
-    url = url.split("#")[0].split("?")[0];
-    bindingsCurrentPath(url);
-}
-
-function resolveUrl(rootUrl = "", path = "", query = null) {
-    return (path.startsWith("~/") ? rootUrl + path.substr(1) : path)
-         + (query ? "?" + qs.stringify(ko.toJS(query)) : "");
-}
+export const bindingsCurrentPath = ko.observable(location.pathname);
 
 function applyBinding(
     el: Element,
@@ -34,12 +25,11 @@ function applyBinding(
 ) {
     let router = getParentRouter(ko.contextFor(el));
     let rootUrl = router && router.rootUrl || "";
+    let bindingsToApply = {};
 
     let url = ko.pureComputed(() => resolveUrl(
         rootUrl, allBindings.get("path"), allBindings.get("query")
     ));
-
-    let bindingsToApply = {};
 
     if (el.tagName.toLocaleUpperCase() === "A") {
         bindingsToApply['attr'] = { href: url }
@@ -65,8 +55,12 @@ function applyBinding(
 
     let activePathCss = allBindings.get("activePathCss");
     if (activePathCss) {
+        let path = ko.pureComputed(() => resolveUrl(
+            rootUrl, allBindings.get("path")
+        ));
+
         bindingsToApply['css'] = {
-            [activePathCss]: ko.pureComputed(() => url() === bindingsCurrentPath())
+            [activePathCss]: ko.pureComputed(() => path() === bindingsCurrentPath())
         };
     }
 

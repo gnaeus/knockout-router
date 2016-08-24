@@ -3,6 +3,7 @@
  * Available under MIT license
  */
 import * as ko from "knockout";
+import * as qs from "qs";
 
 export const arrayFirst = ko.utils.arrayFirst;
 export const objectForEach = ko.utils.objectForEach;
@@ -19,14 +20,35 @@ export function inherit<T, U>(target: T, source: U): T & U {
     return target as any;
 }
 
+export function startsWith(str: string, search: string): boolean {
+    search = String(search);
+    let length = search.length;
+    return length === 0 || str.substr(0, length) === search;
+}
+
+export function endsWith(str: string, search: string): boolean {
+    search = String(search);
+    let length = search.length;
+    return length === 0 || str.substr(-length) === search;
+}
+
 export class RouterTag { }
 
 export function getParentRouter(bindingContext: ko.BindingContext<any>): any {
     return arrayFirst(bindingContext.$parents, vm => vm instanceof RouterTag);
 }
 
-export function getPath({ pathname, search, hash }): string {
+export function getPath(url: string): string {
+    return url.split("#")[0].split("?")[0];
+}
+
+export function getUrl({ pathname, search, hash }): string {
     return pathname + search + (hash || "");
+}
+
+export function resolveUrl(rootUrl = "", path = "", query = null) {
+    return (startsWith(path, "~/") ? rootUrl + path.substr(1) : path)
+         + (query ? "?" + qs.stringify(ko.toJS(query)) : "");
 }
 
 export function eventWhich(event): number {

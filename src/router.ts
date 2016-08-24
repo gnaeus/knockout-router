@@ -4,12 +4,12 @@
  */
 import * as ko from "knockout";
 import {
-    RouterTag, getParentRouter, arrayFirst,
-    inherit, getPath, eventWhich, sameOrigin
+    RouterTag, getParentRouter, arrayFirst, inherit, 
+    getUrl, getPath, eventWhich, sameOrigin
 } from "./utils.ts";
 import { RouteContext, ComponentParams } from "./context.ts";
 import { Route, Action } from "./route.ts";
-import { setBindingsCurrentPath } from "./bindings.ts";
+import { bindingsCurrentPath } from "./bindings.ts";
 
 const CLICK_EVENT = typeof document !== "undefined" && document.ontouchstart
     ? "touchstart" : "click";
@@ -79,7 +79,7 @@ class Router extends RouterTag {
             node, bindingContext, this.routePrefix, this.actions
         ));
 
-        this.dispatchAndNavigate(getPath(location));
+        this.dispatchAndNavigate(getUrl(location));
     }
 
     dispose() {
@@ -160,7 +160,7 @@ export function navigate(url: string, replace = false): boolean {
     let applyNavigation = () => {
         ROUTERS.forEach(router => { router.navigate(); });
         if (status) {
-            setBindingsCurrentPath(url);
+            bindingsCurrentPath(getPath(url));
         }
     };
 
@@ -172,12 +172,19 @@ export function navigate(url: string, replace = false): boolean {
     return status;
 }
 
+// Safari and Crome before v.34 triggers "popstate" event
+// immediately after widow "load" event
+let popStateOnLoad = true;
+
+addEventListener("load", () => {
+    setTimeout(() => { popStateOnLoad = false; })
+});
+
 function onPopState(event: PopStateEvent) {
-    console.log(event);
-    if (event.defaultPrevented) {
+    if (popStateOnLoad || event.defaultPrevented) {
         return;
     }
-    if (navigate(getPath(location), true)) {
+    if (navigate(getUrl(location), true)) {
         event.preventDefault();
     }
 }
@@ -206,7 +213,7 @@ function onLinkClick(event: MouseEvent) {
         return;
     }
 
-    if (navigate(getPath(target))) {
+    if (navigate(getUrl(target))) {
          event.preventDefault();
     }
 }
