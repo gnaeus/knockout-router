@@ -16,6 +16,8 @@ const CLICK_EVENT = typeof document !== "undefined" && document.ontouchstart
 
 const ROUTERS: Router[] = [];
 
+let NAV_REQ_NUMBER = 0;
+
 export interface RouterOptions {
     rootUrl?: string,
     routePrefix?: string,
@@ -33,6 +35,7 @@ class Router extends RouterTag {
     onNavFinish: () => void;
     actions: Object;
     route: Route = null;
+    navReqNumber: number;
     
     private routes: Route[] = [];
     private binding = ko.observable<{
@@ -61,6 +64,7 @@ class Router extends RouterTag {
             this.rootUrl = rootUrl || "";
             this.routePrefix = this.rootUrl + (routePrefix || "");
             this.actions = actions || {};
+            this.navReqNumber = NAV_REQ_NUMBER;
         } else {
             if (typeof rootUrl === "string") {
                 throw new Error("Only top-level router can specify 'rootUrl'");
@@ -71,6 +75,8 @@ class Router extends RouterTag {
             this.routePrefix = parentRouter.routePrefix + (routePrefix || "");
             // inherited from parent
             this.actions = inherit(actions || {}, parentRouter.actions);
+            // inherited from parent
+            this.navReqNumber = parentRouter.navReqNumber;
         }
         this.onNavStart = onNavStart || noop;
         this.onNavFinish = onNavFinish || noop;
@@ -109,6 +115,9 @@ class Router extends RouterTag {
     }
 
     navigate() {
+        if (this.navReqNumber !== NAV_REQ_NUMBER) {
+            return;
+        }
         if (!this.route) {
             this.binding(null);
             this.onNavFinish();
@@ -142,6 +151,9 @@ class Router extends RouterTag {
 }
 
 export function navigate(url: string, replace = false): boolean {
+    // pending navigation request can be aborted by subsequent navigate call
+    let navReqNumber = ++NAV_REQ_NUMBER;
+
     let promises = ROUTERS
         .map(router => router.dispatch(url))
         .filter(promise => !!promise);
@@ -158,7 +170,13 @@ export function navigate(url: string, replace = false): boolean {
     }
 
     let applyNavigation = () => {
-        ROUTERS.forEach(router => { router.navigate(); });
+        if (navReqNumber !== NAV_REQ_NUMBER) {
+            return;
+        }
+        ROUTERS.forEach(router => {
+            router.navReqNumber = NAV_REQ_NUMBER; 
+            router.navigate();
+        });
         if (status) {
             bindingsCurrentPath(getPath(url));
         }

@@ -1185,6 +1185,7 @@ function applyBinding(el, allBindings, ctx) {
 var CLICK_EVENT = typeof document !== "undefined" && document.ontouchstart
     ? "touchstart" : "click";
 var ROUTERS = [];
+var NAV_REQ_NUMBER = 0;
 var Router = (function (_super) {
     __extends(Router, _super);
     function Router(element, routeNodes, _a) {
@@ -1207,6 +1208,7 @@ var Router = (function (_super) {
             this.rootUrl = rootUrl || "";
             this.routePrefix = this.rootUrl + (routePrefix || "");
             this.actions = actions || {};
+            this.navReqNumber = NAV_REQ_NUMBER;
         }
         else {
             if (typeof rootUrl === "string") {
@@ -1218,6 +1220,8 @@ var Router = (function (_super) {
             this.routePrefix = parentRouter.routePrefix + (routePrefix || "");
             // inherited from parent
             this.actions = inherit(actions || {}, parentRouter.actions);
+            // inherited from parent
+            this.navReqNumber = parentRouter.navReqNumber;
         }
         this.onNavStart = onNavStart || noop;
         this.onNavFinish = onNavFinish || noop;
@@ -1245,6 +1249,9 @@ var Router = (function (_super) {
         return action(context);
     };
     Router.prototype.navigate = function () {
+        if (this.navReqNumber !== NAV_REQ_NUMBER) {
+            return;
+        }
         if (!this.route) {
             this.binding(null);
             this.onNavFinish();
@@ -1278,6 +1285,8 @@ var Router = (function (_super) {
 }(RouterTag));
 function navigate(url, replace) {
     if (replace === void 0) { replace = false; }
+    // pending navigation request can be aborted by subsequent navigate call
+    var navReqNumber = ++NAV_REQ_NUMBER;
     var promises = ROUTERS
         .map(function (router) { return router.dispatch(url); })
         .filter(function (promise) { return !!promise; });
@@ -1292,7 +1301,13 @@ function navigate(url, replace) {
         }
     }
     var applyNavigation = function () {
-        ROUTERS.forEach(function (router) { router.navigate(); });
+        if (navReqNumber !== NAV_REQ_NUMBER) {
+            return;
+        }
+        ROUTERS.forEach(function (router) {
+            router.navReqNumber = NAV_REQ_NUMBER;
+            router.navigate();
+        });
         if (status) {
             bindingsCurrentPath(getPath(url));
         }
