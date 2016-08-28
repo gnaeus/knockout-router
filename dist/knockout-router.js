@@ -1376,3 +1376,4 @@ exports.navigate = navigate;
 Object.defineProperty(exports, '__esModule', { value: true });
 
 })));
+//# sourceMappingURL=knockout-router.js.map

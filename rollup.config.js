@@ -7,6 +7,7 @@ export default {
     dest: "dist/knockout-router.js",
 
     format: "umd",
+    sourceMap: true,
     moduleName: "KnockoutRouter",
 
     external: [
