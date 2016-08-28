@@ -1092,8 +1092,12 @@ var Route = (function () {
         var _a = this.restParams, route = _a.route, action = _a.action;
         delete this.restParams['route'];
         delete this.restParams['action'];
-        route = route || node.getAttribute("route");
-        action = action || node.getAttribute("action");
+        route = route
+            || node.getAttribute("data-route")
+            || node.getAttribute("route");
+        action = action
+            || node.getAttribute("data-action")
+            || node.getAttribute("action");
         this.route = routePrefix + route;
         this.action = noop$1;
         if (typeof action === "function") {
@@ -1200,8 +1204,12 @@ var Router = (function (_super) {
             addEventListener(CLICK_EVENT, onLinkClick, false);
             addEventListener("popstate", onPopState, false);
         }
-        rootUrl = rootUrl || element.getAttribute("rootUrl");
-        routePrefix = routePrefix || element.getAttribute("routePrefix");
+        rootUrl = rootUrl
+            || element.getAttribute("data-rootUrl")
+            || element.getAttribute("rootUrl");
+        routePrefix = routePrefix
+            || element.getAttribute("data-routePrefix")
+            || element.getAttribute("routePrefix");
         var bindingContext = ko.contextFor(element);
         var parentRouter = getParentRouter(bindingContext);
         if (!parentRouter) {

@@ -54,8 +54,12 @@ class Router extends RouterTag {
             addEventListener("popstate", onPopState, false);
         }
 
-        rootUrl = rootUrl || element.getAttribute("rootUrl");
-        routePrefix = routePrefix || element.getAttribute("routePrefix");
+        rootUrl = rootUrl
+            || element.getAttribute("data-rootUrl")
+            || element.getAttribute("rootUrl");
+        routePrefix = routePrefix
+            || element.getAttribute("data-routePrefix") 
+            || element.getAttribute("routePrefix");
 
         let bindingContext = ko.contextFor(element);
         let parentRouter = getParentRouter(bindingContext) as Router;

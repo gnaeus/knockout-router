@@ -36,8 +36,12 @@ export class Route {
         delete this.restParams['route'];
         delete this.restParams['action'];
 
-        route = route || node.getAttribute("route");
-        action = action || node.getAttribute("action");
+        route = route 
+            || node.getAttribute("data-route")
+            || node.getAttribute("route") ;
+        action = action
+            || node.getAttribute("data-action")
+            || node.getAttribute("action");
         
         this.route = routePrefix + route;
         this.action = noop;
