@@ -1107,13 +1107,13 @@ var Route = (function () {
             if (actions.hasOwnProperty(action)) {
                 this.action = actions[action];
             }
-            else {
-                ko.components.defaultLoader.getConfig(this.component, function (config) {
-                    if (config.hasOwnProperty(action)) {
-                        _this.action = config[action];
-                    }
-                });
-            }
+        }
+        else {
+            ko.components.defaultLoader.getConfig(this.component, function (config) {
+                if (config.hasOwnProperty("action")) {
+                    _this.action = config["action"];
+                }
+            });
         }
         this.re = _pathToRegexp(this.route);
         this.keys = this.re.keys.map(function (k) { return k.name; });

@@ -93,11 +93,12 @@
     <div id="container">
         <knockout-router id="content" rootUrl="/demo" params="
             onNavStart: function(){ console.log('navStart'); },
-            onNavFinish: function(){ console.log('navFinish'); }
+            onNavFinish: function(){ console.log('navFinish'); },
+            actions: actions,
         ">
             <home-page route="/"></home-page>
             <tasks-page params="route: '/tasks', store: store"></tasks-page>
-            <task-page route="/tasks/:taskID/:tab?"></task-page>
+            <task-page route="/tasks/:taskID/:tab?" params="actions: actions"></task-page>
         </knockout-router>
 
         <aside id="sidebar">
@@ -134,7 +135,7 @@
             <a data-bind="path: '/demo/tasks/' + params.taskID() + '/comments',
                           activePathCss: 'active-path'">comments</a>
         </div>
-        <knockout-router routePrefix="/tasks/:taskID">
+        <knockout-router routePrefix="/tasks/:taskID" params="actions: actions">
             <details-view route="/" action="setState"></details-view>
             <comments-view route="/comments" action="setState"></comments-view>
         </knockout-router>
@@ -172,17 +173,21 @@
             .map(function (node) { return node.getAttribute("id"); })
             .forEach(function (tmplId) {
                 ko.components.register(tmplId, {
-                    template: { element: tmplId },
-                    setState: function(context) {
-                        context.state = {
-                            count: context.params.taskID,
-                        };
-                        return delay(1000);
-                    },
+                    template: { element: tmplId }
                 })
             });
 
-        ko.applyBindings({ store: { foo: "bar" } });
+        ko.applyBindings({
+            store: { foo: "bar" },
+            actions: {
+                setState: function(context) {
+                    context.state = {
+                        count: context.params.taskID,
+                    };
+                    return delay(1000);
+                }
+            }
+        });
     })();
     </script>
 </body>

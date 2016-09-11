@@ -51,13 +51,13 @@ export class Route {
         } else if (typeof action === "string") {
             if (actions.hasOwnProperty(action)) {
                 this.action = actions[action];
-            } else {
-                ko.components.defaultLoader.getConfig(this.component, config => {
-                    if (config.hasOwnProperty(action)) {
-                        this.action = config[action];
-                    }
-                });
             }
+        } else {
+            ko.components.defaultLoader.getConfig(this.component, config => {
+                if (config.hasOwnProperty("action")) {
+                    this.action = config["action"];
+                }
+            });
         }
 
         this.re = _pathToRegexp(this.route);
