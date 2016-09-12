@@ -8,10 +8,10 @@ import { ParamsBindings, inherit, objectForEach } from "./utils.ts";
 export interface RouteContext {
     params: Object & {
         [key: string]: any
-    },
-    state: any,
-    route: any,
-    url: any,
+    };
+    state: any;
+    route: any;
+    url: any;
 }
 
 export class ComponentParams implements RouteContext {
@@ -41,7 +41,7 @@ export class ComponentParams implements RouteContext {
             if (!params.hasOwnProperty(key)) {
                 observable(null);
             }
-        })
+        });
         this.state(state);
         this.route(route);
         this.url(url);

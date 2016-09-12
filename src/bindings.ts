@@ -10,8 +10,8 @@ import {
 import { navigate } from "./router.ts";
 
 // 'query:' and 'activePathCss:' bindings works only with 'path:' binding together
-ko.bindingHandlers['path'] = {
-    init(el, va, ab, vm, ctx) { 
+ko.bindingHandlers["path"] = {
+    init(el, va, ab, vm, ctx) {
         applyBinding.call(this, el, ab, ctx);
     }
 };
@@ -32,9 +32,9 @@ function applyBinding(
     ));
 
     if (el.tagName.toLocaleUpperCase() === "A") {
-        bindingsToApply['attr'] = { href: url }
+        bindingsToApply["attr"] = { href: url };
     } else {
-        bindingsToApply['click'] = (data, e) => {
+        bindingsToApply["click"] = (data, e) => {
             let debounce = 1 !== eventWhich(e);
             let hasOtherTarget = el.hasAttribute("target");
             let hasExternalRel = el.getAttribute("rel") === "external";
@@ -46,8 +46,8 @@ function applyBinding(
 
             let handled = navigate(url());
             if (handled) {
-                e.preventDefault()
-                e.stopImmediatePropagation()
+                e.preventDefault();
+                e.stopImmediatePropagation();
             }
             return !handled;
         };
@@ -59,7 +59,7 @@ function applyBinding(
             rootUrl, allBindings.get("path")
         ));
 
-        bindingsToApply['css'] = {
+        bindingsToApply["css"] = {
             [activePathCss]: ko.pureComputed(() => path() === bindingsCurrentPath())
         };
     }

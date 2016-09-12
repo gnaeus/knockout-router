@@ -3,19 +3,19 @@ export type Action = (context: RouteContext) => any;
 export interface RouteContext {
     params: {
         [key: string]: any
-    },
-    state: any,
-    route: any,
-    url: any,
+    };
+    state: any;
+    route: any;
+    url: any;
 }
 
 export interface RouterOptions {
-    rootUrl?: string,
-    routePrefix?: string,
-    onNavStart: () => void,
-    onNavEnd: () => void,
+    rootUrl?: string;
+    routePrefix?: string;
+    onNavStart: () => void;
+    onNavEnd: () => void;
     actions?: Object & {
-        [key: string]: Action,
+        [key: string]: Action;
     }
 }
 

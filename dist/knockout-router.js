@@ -1090,8 +1090,8 @@ var Route = (function () {
         this.component = ko.components.getComponentNameForNode(node);
         this.restParams = getParamsBindings(node, bindingContext);
         var _a = this.restParams, route = _a.route, action = _a.action;
-        delete this.restParams['route'];
-        delete this.restParams['action'];
+        delete this.restParams["route"];
+        delete this.restParams["action"];
         route = route
             || node.getAttribute("data-route")
             || node.getAttribute("route");
@@ -1142,7 +1142,7 @@ var Route = (function () {
 function noop$1() { }
 
 // 'query:' and 'activePathCss:' bindings works only with 'path:' binding together
-ko.bindingHandlers['path'] = {
+ko.bindingHandlers["path"] = {
     init: function (el, va, ab, vm, ctx) {
         applyBinding.call(this, el, ab, ctx);
     }
@@ -1154,10 +1154,10 @@ function applyBinding(el, allBindings, ctx) {
     var bindingsToApply = {};
     var url = ko.pureComputed(function () { return resolveUrl(rootUrl, allBindings.get("path"), allBindings.get("query")); });
     if (el.tagName.toLocaleUpperCase() === "A") {
-        bindingsToApply['attr'] = { href: url };
+        bindingsToApply["attr"] = { href: url };
     }
     else {
-        bindingsToApply['click'] = function (data, e) {
+        bindingsToApply["click"] = function (data, e) {
             var debounce = 1 !== eventWhich(e);
             var hasOtherTarget = el.hasAttribute("target");
             var hasExternalRel = el.getAttribute("rel") === "external";
@@ -1176,7 +1176,7 @@ function applyBinding(el, allBindings, ctx) {
     var activePathCss = allBindings.get("activePathCss");
     if (activePathCss) {
         var path_1 = ko.pureComputed(function () { return resolveUrl(rootUrl, allBindings.get("path")); });
-        bindingsToApply['css'] = (_a = {},
+        bindingsToApply["css"] = (_a = {},
             _a[activePathCss] = ko.pureComputed(function () { return path_1() === bindingsCurrentPath(); }),
             _a
         );
@@ -1321,7 +1321,7 @@ function navigate(url, replace) {
             bindingsCurrentPath(getPath(url));
         }
     };
-    if (promises.length == 0) {
+    if (promises.length === 0) {
         applyNavigation();
     }
     else {

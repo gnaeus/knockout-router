@@ -4,7 +4,7 @@
  */
 import * as ko from "knockout";
 import {
-    RouterTag, getParentRouter, arrayFirst, inherit, 
+    RouterTag, getParentRouter, arrayFirst, inherit,
     getUrl, getPath, eventWhich, sameOrigin
 } from "./utils.ts";
 import { RouteContext, ComponentParams } from "./context.ts";
@@ -19,13 +19,13 @@ const ROUTERS: Router[] = [];
 let NAV_REQ_NUMBER = 0;
 
 export interface RouterOptions {
-    rootUrl?: string,
-    routePrefix?: string,
-    onNavStart: () => void,
-    onNavFinish: () => void,
+    rootUrl?: string;
+    routePrefix?: string;
+    onNavStart: () => void;
+    onNavFinish: () => void;
     actions?: Object & {
         [key: string]: Action,
-    }
+    };
 }
 
 class Router extends RouterTag {
@@ -36,14 +36,14 @@ class Router extends RouterTag {
     actions: Object;
     route: Route = null;
     navReqNumber: number;
-    
+
     private routes: Route[] = [];
     private binding = ko.observable<{
         name: string,
         params: ComponentParams,
     }>();
-    
-    constructor(element: Element, routeNodes: Element[], { 
+
+    constructor(element: Element, routeNodes: Element[], {
         rootUrl, routePrefix, onNavStart, onNavFinish, actions
     }: RouterOptions) {
         super();
@@ -58,7 +58,7 @@ class Router extends RouterTag {
             || element.getAttribute("data-rootUrl")
             || element.getAttribute("rootUrl");
         routePrefix = routePrefix
-            || element.getAttribute("data-routePrefix") 
+            || element.getAttribute("data-routePrefix")
             || element.getAttribute("routePrefix");
 
         let bindingContext = ko.contextFor(element);
@@ -127,7 +127,7 @@ class Router extends RouterTag {
             this.onNavFinish();
             return;
         }
-        
+
         let { component, context, restParams } = this.route;
         let binding = this.binding();
 
@@ -150,7 +150,7 @@ class Router extends RouterTag {
         if (!promise) {
             this.navigate();
         } else {
-            promise.then(() => { this.navigate() });
+            promise.then(() => { this.navigate(); });
         }
     }
 }
@@ -164,7 +164,7 @@ export function navigate(url: string, replace = false): boolean {
         .filter(promise => !!promise);
 
     let status = !!arrayFirst(ROUTERS, router => !!router.route);
-    
+
     // TODO: store and load history state
     if (status && typeof history !== "undefined") {
         if (replace) {
@@ -179,7 +179,7 @@ export function navigate(url: string, replace = false): boolean {
             return;
         }
         ROUTERS.forEach(router => {
-            router.navReqNumber = NAV_REQ_NUMBER; 
+            router.navReqNumber = NAV_REQ_NUMBER;
             router.navigate();
         });
         if (status) {
@@ -187,7 +187,7 @@ export function navigate(url: string, replace = false): boolean {
         }
     };
 
-    if (promises.length == 0) {
+    if (promises.length === 0) {
         applyNavigation();
     } else {
         Promise.all(promises).then(applyNavigation);
@@ -200,7 +200,7 @@ export function navigate(url: string, replace = false): boolean {
 let popStateOnLoad = true;
 
 addEventListener("load", () => {
-    setTimeout(() => { popStateOnLoad = false; })
+    setTimeout(() => { popStateOnLoad = false; });
 });
 
 function onPopState(event: PopStateEvent) {
@@ -218,7 +218,7 @@ function onLinkClick(event: MouseEvent) {
         target = target.parentNode as HTMLAnchorElement;
     }
     if (!target || "A" !== target.nodeName) {
-        return; 
+        return;
     }
 
     const isDoubleClick = 1 !== eventWhich(event);

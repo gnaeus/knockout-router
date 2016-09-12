@@ -33,16 +33,16 @@ export class Route {
         this.restParams = getParamsBindings(node, bindingContext);
 
         let { route, action } = this.restParams;
-        delete this.restParams['route'];
-        delete this.restParams['action'];
+        delete this.restParams["route"];
+        delete this.restParams["action"];
 
-        route = route 
+        route = route
             || node.getAttribute("data-route")
             || node.getAttribute("route") ;
         action = action
             || node.getAttribute("data-action")
             || node.getAttribute("action");
-        
+
         this.route = routePrefix + route;
         this.action = noop;
 
@@ -70,7 +70,7 @@ export class Route {
         if (!matches) {
             return false;
         }
-        
+
         let params = {};
         for (let i = 1; i < matches.length; ++i) {
             params[this.keys[i - 1]] = matches[i];
