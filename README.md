@@ -46,7 +46,7 @@ Array.from(document.querySelectorAll("template"))
     ko.components.register(id, template: { element: id });
   });
 
-ko.applyBintings({
+ko.applyBindings({
   actions: {
     async loadUser({ params }) {
       let resp = await fetch("/api/users/" + params.userId);
